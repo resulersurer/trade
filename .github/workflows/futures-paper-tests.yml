@@ -1,0 +1,23 @@
+name: Futures Paper Validation
+on:
+  push:
+    branches: [futures-testnet]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Futures market-data tests
+        run: node --test futures-testnet/test/futures-testnet.test.mjs
+      - name: OpenAI advisory mocked tests
+        run: node --test futures-testnet/analysis/test/analysis.test.mjs
+      - name: Paper ledger tests
+        run: node --test futures-testnet/paper/test/paper.test.mjs
+      - name: D1 secret-gated API tests
+        run: node --test futures-testnet/d1/test/secure-api.test.mjs
