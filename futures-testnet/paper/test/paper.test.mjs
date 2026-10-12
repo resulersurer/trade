@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {PaperLedger} from '../src/paper.mjs';
+const setup=(signal='LONG')=>{const p=new PaperLedger({cash:1000,feeRate:.001,slippage:0});p.signal({id:'s',symbol:'BTCUSDT',signal,confidence:70,time:1});return p;};
+test('LONG net PnL includes both fees',()=>{const p=setup();p.open({id:'p',signalId:'s',price:100,margin:100,leverage:2,time:2});assert.ok(Math.abs(p.close({id:'p',price:110,time:3}).net-19.58)<1e-8);});
+test('SHORT profits from a fall',()=>{const p=setup('SHORT');p.open({id:'p',signalId:'s',price:100,margin:100,time:2});assert.ok(p.close({id:'p',price:90,time:3}).net>0);});
+test('WAIT cannot open',()=>{const p=setup('WAIT');assert.throws(()=>p.open({id:'p',signalId:'s',price:100,margin:100,time:2}));});
+test('funding charged for LONG and credited for SHORT',()=>{for(const [side,sign] of [['LONG',1],['SHORT',-1]]){const p=setup(side);p.open({id:'p',signalId:'s',price:100,margin:100,time:2});assert.ok(Math.abs(p.funding({id:'p',rate:.001,time:3})-.1*sign)<1e-8);}});
+test('mark and close update positions',()=>{const p=setup();p.open({id:'p',signalId:'s',price:100,margin:100,time:2});assert.equal(p.mark({id:'p',price:105,time:3}),5);p.close({id:'p',price:105,time:4});assert.equal(p.report().openTrades,0);});
+test('prevents overspending and high leverage',()=>{const p=setup();assert.throws(()=>p.open({id:'p',signalId:'s',price:100,margin:1000,time:2}));assert.throws(()=>p.open({id:'p',signalId:'s',price:100,margin:10,leverage:4,time:2}));});
+test('duplicate signals rejected',()=>{const p=setup();assert.throws(()=>p.signal({id:'s',symbol:'BTCUSDT',signal:'LONG',confidence:70,time:1}));});
+test('no network or exchange operations',()=>{const p=setup();assert.equal(typeof p.placeOrder,'undefined');assert.equal(typeof p.fetch,'undefined');});
