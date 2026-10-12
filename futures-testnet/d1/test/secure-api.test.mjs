@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {handleSignal} from '../secure-api.mjs';
+const payload={id:'sig_1',symbol:'BTCUSDT',signal:'WAIT',confidence:50,reason:'No clear trend',time:1760000000000};
+const secret='offline-test-token';
+const mockDb=()=>{const rows=[];return {rows,prepare(sql){assert.match(sql,/INSERT INTO paper_signals/);return {bind(...args){return {run:async()=>{rows.push(args);return {success:true}}}}}}}};
+const req=(data=payload,auth=true)=>new Request('https://localhost/signals',{method:'POST',headers:{'content-type':'application/json',...(auth?{'authorization':'Bearer '+secret}:{})},body:JSON.stringify(data)});
+test('reject requests when secrets are missing',async()=>assert.equal((await handleSignal(req(),{PAPER_DB:mockDb()})).status,503));
+test('reject unauthenticated writes',async()=>assert.equal((await handleSignal(req(payload,false),{WRITE_TOKEN:secret,PAPER_DB:mockDb()})).status,401));
+test('reject invalid trading signal',async()=>assert.equal((await handleSignal(req({...payload,signal:'BUY'}),{WRITE_TOKEN:secret,PAPER_DB:mockDb()})).status,400));
+test('persist valid advisory signal',async()=>{const db=mockDb();const r=await handleSignal(req(),{WRITE_TOKEN:secret,PAPER_DB:db});assert.equal(r.status,201);assert.equal(db.rows.length,1);assert.equal(db.rows[0][2],'WAIT')});
+test('no trading action exposed',async()=>{const r=await handleSignal(new Request('https://localhost/order',{method:'GET'}),{WRITE_TOKEN:secret,PAPER_DB:mockDb()});assert.equal(r.status,405)});
