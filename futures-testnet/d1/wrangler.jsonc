@@ -1,0 +1,11 @@
+{
+  "name": "trade-futures-paper-dev",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-10-06",
+  "d1_databases": [{
+    "binding": "PAPER_DB",
+    "database_name": "trade-futures-paper",
+    "database_id": "d8a0cb37-4175-45f9-bbd5-bd69b0263a91",
+    "migrations_dir": "./migrations"
+  }]
+}
