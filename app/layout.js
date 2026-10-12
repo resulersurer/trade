@@ -1,4 +1,5 @@
 import './globals.css';
+import './ledger.css';
 
 export const metadata = {
   title: 'Trade Desk',
