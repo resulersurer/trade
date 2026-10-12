@@ -1,7 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Trade',
+  title: 'Trade Desk',
+  description: 'Binance Spot için kontrollü analiz ve emir çalışma alanı.',
 };
 
 export default function RootLayout({ children }) {
