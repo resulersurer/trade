@@ -24,6 +24,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_uncertain_order_per_session ON order_inten
 
 CREATE TABLE IF NOT EXISTS rate_limits (
   key text PRIMARY KEY,
-  window bigint NOT NULL,
+  "window" bigint NOT NULL,
   count integer NOT NULL DEFAULT 1
 );
