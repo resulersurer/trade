@@ -1,4 +1,6 @@
 import { verifyBinance } from '@/lib/binance';
+import { rsaSignature } from '@/lib/futures.mjs';
+import { rateLimit } from '@/lib/db';
 import { getSession, publicSession, saveCredentials } from '@/lib/session';
 import { AppError, body, sameOrigin } from '@/lib/security';
 
@@ -9,9 +11,14 @@ export async function POST(request) {
     const session = await getSession();
     const credentials = { ...session.credentials };
     if (input.provider === 'binance') {
-      if (!/^[-_A-Za-z0-9]{20,128}$/.test(input.apiKey || '') || !/^[-_A-Za-z0-9]{20,128}$/.test(input.secretKey || '')) throw new AppError('Binance anahtar biçimi geçersiz.');
-      const checked = await verifyBinance({ apiKey: input.apiKey.trim(), secretKey: input.secretKey.trim() });
-      credentials.binance = { apiKey: input.apiKey.trim(), secretKey: input.secretKey.trim(), ...checked, checkedAt: new Date().toISOString() };
+      await rateLimit(`integrations:${session.id}`, 10, 3600);
+      if (!/^[-_A-Za-z0-9]{20,128}$/.test(String(input.apiKey || '').trim())) throw new AppError('Binance API Key biçimi geçersiz.');
+      const privateKey = process.env.BINANCE_RSA_PRIVATE_KEY;
+      if (!privateKey) throw new AppError('RSA private key sunucuda henüz yapılandırılmadı.', 503);
+      try { rsaSignature('key-validation', privateKey); } catch { throw new AppError('Sunucudaki RSA anahtarı geçersiz.', 503); }
+      const binance = { apiKey: input.apiKey.trim(), privateKey, authType: 'RSA', marketType: 'USDS_FUTURES' };
+      const checked = await verifyBinance(binance);
+      credentials.binance = { ...binance, ...checked, checkedAt: new Date().toISOString() };
     } else if (input.provider === 'openai') {
       if (!/^sk-[A-Za-z0-9_-]{20,}$/.test(input.apiKey || '')) throw new AppError('OpenAI anahtar biçimi geçersiz.');
       const response = await fetch('https://api.openai.com/v1/models', { headers: { Authorization: `Bearer ${input.apiKey.trim()}` }, signal: AbortSignal.timeout(10000) });

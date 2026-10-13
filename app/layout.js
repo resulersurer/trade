@@ -3,7 +3,7 @@ import './ledger.css';
 
 export const metadata = {
   title: 'Trade Desk',
-  description: 'Binance Spot için kontrollü analiz ve emir çalışma alanı.',
+  description: 'Binance USDⓈ-M Futures için kontrollü analiz ve emir çalışma alanı.',
 };
 
 export default function RootLayout({ children }) {

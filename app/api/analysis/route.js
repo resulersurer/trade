@@ -15,7 +15,7 @@ export async function POST(request) {
     if (!session.credentials.openai) throw new AppError('Önce OpenAI eklentisini bağlayın.', 409);
     await rateLimit(`analysis:${session.id}`, 10, 3600);
     const symbol = String(input.symbol || 'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const candles = await publicRequest('/api/v3/klines', { symbol, interval: '1h', limit: '48' });
+    const candles = await publicRequest('/fapi/v1/klines', { symbol, interval: '1h', limit: '48' });
     const compact = candles.map(c => ({ t: c[0], o: c[1], h: c[2], l: c[3], c: c[4], v: c[5] }));
     const provider = createOpenAI({ apiKey: session.credentials.openai.apiKey });
     const result = await generateText({ model: provider(session.credentials.openai.model), output: Output.object({ schema }), maxOutputTokens: 700,
